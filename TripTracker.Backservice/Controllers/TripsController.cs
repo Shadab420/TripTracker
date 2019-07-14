@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using TripTracker.Backservice.Data;
 using TripTracker.Backservice.Models;
 
 namespace TripTracker.Backservice.Controllers
@@ -11,46 +13,80 @@ namespace TripTracker.Backservice.Controllers
     [ApiController]
     public class TripsController : ControllerBase
     {
-        private Repository _repository;
+        TripContext dbContext;
 
-        public TripsController(Repository repository)
+        public TripsController(TripContext tripContext)
         {
-            _repository = repository;
+            dbContext = tripContext;
         }
 
-        // GET api/values
+        // GET api/trips
         [HttpGet]
-        public ActionResult<IEnumerable<Trip>> Get()
+        public async Task<IActionResult> GetAsync()
         {
-            return _repository.Get();
+            List<Trip> trips = await dbContext.Trips.ToListAsync();
+
+            return Ok(trips);
         }
 
-        // GET api/values/5
+        // GET api/trips/5
         [HttpGet("{id}")]
-        public ActionResult<Trip> Get(int id)
+        public async Task<ActionResult<Trip>> Get(int id)
         {
-            return _repository.Get(id);
+            Trip trip = await dbContext.Trips.FindAsync(id);
+
+            return Ok(trip);
         }
 
         // POST api/values
         [HttpPost]
-        public void Post([FromBody] Trip value)
+        public async Task<IActionResult> Post([FromBody] Trip value)
         {
-            _repository.Add(value);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            dbContext.Trips.Add(value);
+            await dbContext.SaveChangesAsync();
+
+            return Ok();
         }
 
         // PUT api/values/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] Trip value)
+        public async Task<IActionResult> Put(int id, [FromBody] Trip value)
         {
-            _repository.Update(value);
+            if (!dbContext.Trips.Any(t => t.Id == id))
+            {
+                return NotFound();
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            dbContext.Trips.Update(value);
+            await dbContext.SaveChangesAsync();
+
+            return Ok();
         }
 
         // DELETE api/values/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            _repository.Remove(id);
+            var trip = dbContext.Trips.Find(id);
+
+            if(trip == null)
+            {
+                return NotFound();
+            }
+
+            dbContext.Trips.Remove(trip);
+            await dbContext.SaveChangesAsync();
+
+            return NoContent();
         }
     }
 }

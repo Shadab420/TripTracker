@@ -6,12 +6,14 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore;
 using Swashbuckle.AspNetCore.Swagger;
+using TripTracker.Backservice.Data;
 
 namespace TripTracker.Backservice
 {
@@ -28,8 +30,14 @@ namespace TripTracker.Backservice
         public void ConfigureServices(IServiceCollection services)
         {
             //Api repository model
-            services.AddTransient<Models.Repository>();
+            //services.AddTransient<Models.Repository>();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+
+            //Entity framework dbcontext
+            services.AddDbContext<TripContext>(options =>
+                options.UseSqlServer(Configuration.GetConnectionString("TripConnection")) //TripConnection comes from appsettings.json
+            
+            );
 
             //Adding Swashbuckle swagger service which allows to see informations about our API
             services.AddSwaggerGen(options =>
@@ -63,6 +71,9 @@ namespace TripTracker.Backservice
 
             app.UseHttpsRedirection();
             app.UseMvc();
+
+            TripContext.SeedData(app.ApplicationServices);
+
         }
     }
 }
